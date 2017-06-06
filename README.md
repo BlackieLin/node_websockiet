@@ -1,2 +1,2 @@
 # ws_server
-流光的简易websocket聊天室
+websocket聊天室
