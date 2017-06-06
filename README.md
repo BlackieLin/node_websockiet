@@ -1,2 +1,2 @@
 # ws_server
-websocket聊天室
+Blackie's websocket room
