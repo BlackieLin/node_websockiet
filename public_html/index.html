@@ -3,199 +3,104 @@
     <head>
         <meta charset="utf-8"/>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-        <link href="static/css/bootstrap.min.css" rel="stylesheet" type="text/css"/>
+        <link type="text/css" rel="stylesheet" href="static/css/style.css">
         <script type="text/javascript" src="static/js/jquery-1.9.1.js"></script>
-        <script type="text/javascript" src="static/js/bootstrap.min.js"></script>
-        <script type="text/javascript">
-            function MyWebsocket(wsUri, autoConn) {
-                this.wsUri = wsUri;
-                var websocket;
-                this.changeSub(false);
-                if (window.WebSocket == undefined)
-                    this.noWebSocket();
-                else {
-                    if (autoConn)
-                        this.doConn();
-                }
-            }
-            MyWebsocket.prototype.noWebSocket = function () {
-                $("#conn").attr("disabled", "disabled");
-                this.alertMsg("danger", "你使用的浏览器不支持websocket");
-            };
-            //建立连接
-            MyWebsocket.prototype.doConn = function () {
-                var mys = this;
-                this.websocket = new WebSocket(this.wsUri);
-                if (this.websocket.readyState == this.websocket.CONNECTING)
-                    this.alertMsg("info", "正在尝试与websocket服务器[ " + mys.wsUri + " ]进行连接");
-                this.websocket.addEventListener("open", function (evt) {
-                    mys.changeSub(true);
-                    mys.alertMsg("success", "连接websocket服务器[ " + mys.wsUri + " ]成功");
-                });
-                this.websocket.addEventListener("close", function (evt) {
-                    mys.changeSub(false);
-                    mys.alertMsg("info", "已与websocket服务器[ " + mys.wsUri + " ]断开");
-                });
-                this.websocket.addEventListener("message", function (evt) {
-                    mys.alertMsg("success", "收到来自websocket服务器[ " + mys.wsUri + " ]的消息");
-                    mys.appendMsg(false, evt.data);
-                });
-                this.websocket.addEventListener("error", function (evt) {
-                    mys.changeSub(false);
-                    mys.alertMsg("danger", "与websocket服务器[ " + mys.wsUri + " ]的连接发生错误:" + evt.data);
-                });
-            };
-            //显示顶部的警告消息
-            MyWebsocket.prototype.alertMsg = function (msgType, msg) {
-                $("#headStr").attr("class", "alert alert-" + msgType);
-                $("#headStr").html(msg);
-            };
-            /**
-             * 清理页面早期的消息
-             * 
-             * @param int maxNum 页面显示的最大消息数目
-             * @returns void
-             */
-            MyWebsocket.prototype.cleanPage = function (maxNum) {
-                var msgNum = $("#msgList .row").length;//当前已经存在的消息条数
-                if (msgNum > maxNum) {
-                    $("#msgList .row:lt(" + (msgNum - maxNum) + ")").hide(600, function () {
-                        this.remove();
-                    });
-                }
-                //如果有滚动条，则平滑滚动到底部
-                if (window.innerHeight != document.body.scrollHeight) {
-                    $("html,body").animate({
-                        scrollTop: (document.body.scrollHeight - window.innerHeight)
-                    }, 500);
-                }
-            }
-            /**
-             * 向html中插入消息
-             * 
-             * @param boolean isMyMsg 是否为自己发的消息
-             * @param string msg 消息内容
-             * @return void
-             */
-            MyWebsocket.prototype.appendMsg = function (isMyMsg, msg) {
-                var mys = this, msgObj = $(msg);
-                if (!isMyMsg){
-                    msgObj.children().attr("class","col-xs-6 col-sm-6 col-sm-offset-5");
-                    var panel=msgObj.find(".panel");
-                    if(panel.hasClass("panel-default"))
-                        panel.attr("class","panel panel-info");
-                }
-                msgObj.css("display","none").appendTo("#msgList").slideDown(200, function () {
-                    mys.cleanPage(15);
-                });
-            };
-            /**
-             * 修改按钮的状态
-             *
-             * @param bool isConn 是否已经连接
-             * @return void
-             */
-            MyWebsocket.prototype.changeSub = function (isConn) {
-                var mys = this;
-                if (!isConn) {
-                    $("#sub").attr("disabled", "disabled");
-                    $("#conn").html("连接服务器");
-                    $("#sub").unbind("click");
-                    $("#conn").unbind("click");
-                    $("#conn").click(function () {
-                        mys.doConn();
-                    });
-                }
-                else {
-                    if ($("#sub").attr("disabled") == "disabled")
-                        $("#sub").removeAttr("disabled")
-                    $("#conn").html("断开连接");
-                    $("#sub").unbind("click");
-                    $("#conn").unbind("click");
-                    $("#conn").click(function () {
-                        mys.websocket.close();
-                    });
-                    $("#sub").click(function () {
-                        var nickname = $("#nickname").val();
-                        var msg = $("#inputStr").val();
-                        if (nickname.length == 0) {
-                            $("#dialog_content").html("昵称不能为空");
-                            $("#dialog_div").modal({
-                                backdrop: "static",
-                                keyboard: false
-                            });
-                            return;
-                        }
-                        if (msg.length == 0) {
-                            $("#dialog_content").html("消息内容不能为空");
-                            $("#dialog_div").modal({
-                                backdrop: "static",
-                                keyboard: false
-                            });
-                            return;
-                        }
-                        msg = "<div class=\"row\">\
- <div class=\"col-xs-6 col-sm-6 col-sm-offset-1\">\
-    <div class=\"panel panel-default\">\
-        <div class=\"panel-heading\">\
-            <h3 class=\"panel-title\">"+nickname+"</h3>\
-         </div>\
-        <div class=\"panel-body\">"+msg+"</div>\
-    </div>\
-</div></div>";
-                        mys.websocket.send(msg);
-                        mys.appendMsg(true, msg);
-                        mys.alertMsg("info", "已向websocket服务器[ " + mys.wsUri + " ]发出消息");
-                    });
-                }
-            };
-            $(document).ready(function () {
-                new MyWebsocket("ws://"+location.host, false);
-            });
-        </script>
-        <title>websocket测试</title>
+        <script type="text/javascript" src="static/js/websocket.js"></script>
+    	<title>多人聊天室</title>
     </head>
-
     <body>
-        <div id="mainHtml" class="container">
-            <div class="row">
-                <div id="headStr" class="col-md-12 alert alert-info" role="alert"> websocket测试 </div>
-            </div>
-            <!-- ... -->
-            <div class="row">
-                <div class="col-md-12 panel panel-default">
-                    <div class="panel-body">消息列表
-                    </div>
+    	<div class="container">
+        	<div class="chatbox">
+              <div class="chat_top fn-clear">
+                <div class="logo"><img src="static/images/logo.png" width="190" height="60"  alt=""/></div>
+                <div class="uinfo fn-clear">
+                  <div class="uface"><img src="static/images/hetu.jpg" width="40" height="40"  alt=""/></div>
+                  <div class="uname">
+                    河图<i class="fontico down"></i>
+                    <ul class="managerbox">
+                      <li><a href="#"><i class="fontico lock"></i>修改密码</a></li>
+                      <li><a href="#"><i class="fontico logout"></i>退出登录</a></li>
+                    </ul>
+                  </div>
                 </div>
-            </div>
-            <div class="row"><div id="msgList" class="col-sm-12" style="border: 1px solid #ddd;padding-top: 15px;"></div></div>
-
-            <!--输入框-->
-            <div class="row">
-                <textarea id="inputStr" class="col-md-12 form-control" rows="3"  placeholder="请输入消息内容"></textarea>
-            </div>
-            <!--按纽区-->
-            <div class="row" style="margin-bottom: 15px">
-                <div class="col-md-12 form-inline" role="form">
-                    <input id="nickname" type="text" class="form-control" value="" placeholder="请输入昵称"/>
-                    <button id="sub" type="submit" class="btn btn-primary">发送消息</button>
-                    <button id="conn" type="submit" class="btn btn-primary">连接服务器</button>
-                </div>
-            </div>
-        </div>
-        <!--模态框-->
-        <div id="dialog_div" class="modal fade bs-example-modal-sm" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-sm">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                        <h4 class="modal-title" id="myModalLabel">===提示===</h4>
+              </div>
+              <div class="chat_message fn-clear">
+                <div class="chat_left">
+                  <div class="message_box" id="message_box">
+                    <!--msg box-->
+                  </div>
+                  <div class="write_box">
+                    <textarea id="message" name="message" class="write_area" placeholder="说点啥吧..."></textarea>
+                    <input type="hidden" name="fromname" id="fromname" value="河图" />
+                    <input type="hidden" name="to_uid" id="to_uid" value="0">
+                    <div class="facebox fn-clear">
+                      <div class="expression"></div>
+                      <div class="chat_type" id="chat_type">群聊</div>
+                      <button name="" class="sub_but">提 交</button>
                     </div>
-                    <div id="dialog_content" class="modal-body">
-                        ...
-                    </div>
+                  </div>
                 </div>
+                <div class="chat_right">
+                  <ul class="user_list" title="双击用户私聊">
+                    <li class="fn-clear selected"><em>所有用户</em></li>
+                    <li class="fn-clear" data-id="1"><span><img src="static/images/hetu.jpg" width="30" height="30"  alt=""/></span><em>河图</em><small class="online" title="在线"></small></li>
+                    <li class="fn-clear" data-id="2"><span><img src="static/images/53f44283a4347.jpg" width="30" height="30"  alt=""/></span><em>猫猫</em><small class="online" title="在线"></small></li>
+                    <li class="fn-clear" data-id="3"><span><img src="static/images/53f442834079a.jpg" width="30" height="30"  alt=""/></span><em>白猫</em><small class="offline" title="离线"></small></li>
+                  </ul>
+                </div>
+              </div>
             </div>
+			<script type="text/javascript">
+			//websocket 沟通
+			var MyWebsocket = new MyWebsocket("ws://"+location.host, true);
+            $(document).ready(function(e) {
+				
+                $('#message_box').scrollTop($("#message_box")[0].scrollHeight + 20);
+                $('.uname').hover(
+                    function(){
+                        $('.managerbox').stop(true, true).slideDown(100);
+                    },
+                    function(){
+                        $('.managerbox').stop(true, true).slideUp(100);
+                    }
+                );
+                
+                var fromname = $('#fromname').val();
+                var to_uid   = 0; // 默认为0,表示发送给所有用户
+                var to_uname = '';
+                $('.user_list > li').dblclick(function(){
+                    to_uname = $(this).find('em').text();
+                    to_uid   = $(this).attr('data-id');
+                    if(to_uname == fromname){
+                        alert('您不能和自己聊天!');
+                        return false;
+                    }
+                    if(to_uname == '所有用户'){
+                        $("#toname").val('');
+                        $('#chat_type').text('群聊');
+                    }else{
+                        $("#toname").val(to_uid);
+                        $('#chat_type').text('您正和 ' + to_uname + ' 聊天');
+                    }
+                    $(this).addClass('selected').siblings().removeClass('selected');
+                    $('#message').focus().attr("placeholder", "您对"+to_uname+"说：");
+                });
+                
+                $('.sub_but').click(function(event){
+                    MyWebsocket.sendMessage(event, fromname, to_uid, to_uname);
+                });
+                
+                /*按下按钮或键盘按键*/
+                $("#message").keydown(function(event){
+                    var e = window.event || event;
+                    var k = e.keyCode || e.which || e.charCode;
+                    //按下ctrl+enter发送消息
+                    if((event.ctrlKey && (k == 13 || k == 10) )){
+                        MyWebsocket.sendMessage(event, fromname, to_uid, to_uname);
+                    }
+                });
+            });
+            </script>
         </div>
     </body>
 </html>
