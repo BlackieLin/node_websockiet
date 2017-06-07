@@ -5,7 +5,7 @@ var path = require('path');
 var fs = require('fs');
 
 var srv = http.createServer();
-var serverName="liuguang/ws",socketArr=[];
+var serverName="Blackie/ws",socketArr=[];
 
 function sendWsMessage(socket,frameData){
 	//console.log(frameData);
@@ -46,10 +46,12 @@ function sendWsMessage(socket,frameData){
  */
 function broadcastMsg(buff,noSocket){
 	var key,socket;
-	for(key in socketArr){
+	for(key in socketArr){//发送所有请求机子
 		socket=socketArr[key];
-		if((socket==null)||(socket==noSocket))
+		if((socket==null)||(socket==noSocket)){//不发送本页面
 			continue;
+		}
+		//拉取的数据不加密
 		sendWsMessage(socket,{
 			"fin":1,
 			"rsv1":0,
@@ -75,15 +77,16 @@ function removeSocket(socket){
  */
 function socketSrv(socket,data){
 	var i=-1,tmp,frameData={};
-	tmp=data[++i];
-	frameData.fin=((tmp&parseInt("1000"+"0000",2))==0)?0:1;
-	frameData.rsv1=((tmp&parseInt("100"+"0000",2))==0)?0:1,
-	frameData.rsv2=((tmp&parseInt("10"+"0000",2))==0)?0:1,
-	frameData.rsv3=((tmp&parseInt("1"+"0000",2))==0)?0:1;
-	frameData.opcode=tmp&parseInt("1111",2);
-	tmp=data[++i];
+	tmp=data[++i];//129===第一个字节
+	frameData.fin=((tmp&parseInt("1000"+"0000",2))==0)?0:1;//128--8
+	frameData.rsv1=((tmp&parseInt("100"+"0000",2))==0)?0:1,//64---7
+	frameData.rsv2=((tmp&parseInt("10"+"0000",2))==0)?0:1,//32--6
+	frameData.rsv3=((tmp&parseInt("1"+"0000",2))==0)?0:1;//16--5
+	frameData.opcode=tmp&parseInt("1111",2);//15--4
+	tmp=data[++i];//254 第二个字节
 	frameData.mask=((tmp&parseInt("1000"+"0000",2))==0)?0:1;
 	frameData.payloadLength=tmp&parseInt("111"+"1111",2);
+	//如果等于126就占两个字节，否则4个字节
 	if(frameData.payloadLength==126){
 		frameData.payloadLength=data[++i]<<8;
 		frameData.payloadLength+=data[++i];
@@ -95,12 +98,13 @@ function socketSrv(socket,data){
 		frameData.payloadLength+=data[++i];
 	}
 	var j;
-	if(frameData.mask!=0){
+	if(frameData.mask!=0){//如果加密则，后面四个字节为解密钥匙
 		frameData.maskingKey =new Buffer(4);
 		for(j=0;j<4;j++){
 			frameData.maskingKey[j]=data[++i];
 		}
 	}
+	//数据字节
 	frameData.payloadData=[];
 	for(j=0;j<frameData.payloadLength;j++){
 		tmp=data[++i];
@@ -111,8 +115,8 @@ function socketSrv(socket,data){
 			frameData.payloadData.push(tmp);
 	}
 	frameData.payloadData=new Buffer(frameData.payloadData);
-	//console.log(frameData);
-	//console.log(frameData.payloadData.toString());
+	//console.log(frameData);//解密后的二进制
+	//console.log(frameData.payloadData.toString());//把二进制转为字符串
 	//文本帧
 	if(frameData.opcode==1){
 		broadcastMsg(frameData.payloadData,socket);
@@ -205,6 +209,7 @@ srv.on("request",function (req, res) {
 	var urlData=url.parse(req.url,true);
 	//文件真实路径
 	var tFilepath=path.resolve(__dirname,"./public_html","."+urlData.pathname);
+	//console.log(tFilepath);
 	fs.stat(tFilepath,function(err, stats){
 		if (err){
 			send404(res);
