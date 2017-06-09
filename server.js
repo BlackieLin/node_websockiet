@@ -5,7 +5,7 @@ var path = require('path');
 var fs = require('fs');
 
 var srv = http.createServer();
-var serverName="Blackie/ws",socketArr=[];
+var serverName="Blackie/ws",socketArr=[],sysData=[];
 
 function sendWsMessage(socket,frameData){
 	//console.log(frameData);
@@ -49,6 +49,7 @@ function broadcastMsg(buff,noSocket){
 	for(key in socketArr){//发送所有请求机子
 		socket=socketArr[key];
 		if((socket==null)||(socket==noSocket)){//不发送本页面
+		//if(socket==null){
 			continue;
 		}
 		//拉取的数据不加密
@@ -235,12 +236,12 @@ srv.on("request",function (req, res) {
 });
 //Websocket server
 srv.on('upgrade', function(req, socket, head) {
+	var urlData=url.parse(req.url,true);//urlData.query
 	if(req.httpVersion<1.1){
 		socket.end();
 		return;
 	}
 	var headers=req.headers;
-	//console.log(headers);
 	if(headers.upgrade!="websocket"){
 		socket.end();
 		return;
@@ -268,6 +269,29 @@ srv.on('upgrade', function(req, socket, head) {
   //console.log(respStr);
   socket.setTimeout(0);
   socketArr.push(socket);
+  //获取系统信息
+  var exist=false;
+  if(sysData.length>0){
+	  for (var key in sysData) {
+		if(urlData.query.name==sysData[key].name){
+			exist=true;
+		}
+	  }
+  }
+  if(exist==false){
+  	sysData.push({'name':urlData.query.name})
+  }
+  //发送系统消息
+   var sysAllData={
+		type:'sys',
+		from_user:'sys',
+		to_user:'所有人',
+		time:'',
+		msg:sysData	
+	};
+	var str = JSON.stringify(sysAllData);
+	var buf = new Buffer(str, "utf-8");
+	broadcastMsg(buf,false);//测试
   socket.on("data",function(data){
 	  socketSrv(this,data);
   });
